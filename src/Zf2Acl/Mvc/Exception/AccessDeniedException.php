@@ -6,7 +6,7 @@
  */
 namespace Zf2Acl\Mvc\Exception;
 
-use \Zf2Acl\Mvc\Exception\ExceptionInterface;
+use \Zend\Mvc\Exception\ExceptionInterface;
 
 class AccessDeniedException extends \Exception implements ExceptionInterface
 {
