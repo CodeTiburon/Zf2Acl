@@ -32,7 +32,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      */
     protected $deniedTemplate = 'error';
 	
-	protected $statusCode = '403';
+	protected $statusCode = '404';
 
     /**
      * Set service manager
@@ -45,10 +45,10 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
 
         if (isset($config['view_manager'])) {
 
-            $config = $config['view_manager'];
             $accessDeniedTemplate = $this->statusCode = isset($config['accessDeniedStrategy']['code']) ? $config['accessDeniedStrategy']['code']: 403;
-			
-			$template = isset($config['accessDeniedStrategy']['template']) ? $config['accessDeniedStrategy']['template'] : 'access_denied_template';
+            $template = isset($config['accessDeniedStrategy']['template']) ? $config['accessDeniedStrategy']['template'] : 'access_denied_template';
+
+            $config = $config['view_manager'];
 
             if (isset($config[$template])) {
                 $accessDeniedTemplate = $config[$template];
@@ -124,7 +124,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
         if (empty($error) || $error !== Application::ERROR_EXCEPTION) {
             return;
         }
-        
+
         $ex = $e->getParam('exception');
         if ($ex instanceof AccessDeniedException) {
             $response = $e->getResponse();
