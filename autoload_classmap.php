@@ -4,6 +4,7 @@ return array(
   'Zf2Acl\Module'                              => __DIR__ . '/Module.php',
   'Zf2Acl\Mvc\Exception\AccessDeniedException' => __DIR__ . '/src/Zf2Acl/Mvc/Exception/AccessDeniedException.php',
   'Zf2Acl\Mvc\View\Http\AccessDeniedStrategy'  => __DIR__ . '/src/Zf2Acl/Mvc/View/Http/AccessDeniedStrategy.php',
+  'Zf2Acl\Mvc\View\Http\GuestRedirectUserSetHttpCode'  => __DIR__ . '/src/Zf2Acl/Mvc/View/Http/GuestRedirectUserSetHttpCode.php',
   'Zf2Acl\Permissions\Acl\Acl'                 => __DIR__ . '/src/Zf2Acl/Permissions/Acl/Acl.php',
   'Zf2Acl\Permissions\Acl\AclListener'         => __DIR__ . '/src/Zf2Acl/Permissions/Acl/AclListener.php',
 );
