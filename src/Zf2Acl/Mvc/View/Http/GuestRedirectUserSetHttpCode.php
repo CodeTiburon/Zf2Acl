@@ -31,8 +31,10 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      * @var bool
      */
     protected $deniedTemplate = 'error';
-	
-	protected $statusCode = '404';
+
+    protected $statusCode = '404';
+
+    protected $routeName = 'home';
 
     /**
      * Set service manager
@@ -45,8 +47,9 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
 
         if (isset($config['view_manager'])) {
 
-            $accessDeniedTemplate = $this->statusCode = isset($config['accessDeniedStrategy']['code']) ? $config['accessDeniedStrategy']['code']: 403;
+            $accessDeniedTemplate = $this->statusCode = isset($config['accessDeniedStrategy']['code']) ? $config['accessDeniedStrategy']['code'] : 403;
             $template = isset($config['accessDeniedStrategy']['template']) ? $config['accessDeniedStrategy']['template'] : 'access_denied_template';
+            $this->routeName = isset($config['accessDeniedStrategy']['route']) ? $config['accessDeniedStrategy']['route'] : $this->routeName;
 
             $config = $config['view_manager'];
 
@@ -62,6 +65,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      * Attach the aggregate to the specified event manager
      *
      * @param  EventManagerInterface $events
+     *
      * @return void
      */
     public function attach(EventManagerInterface $events)
@@ -69,13 +73,18 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
         $this->listeners[] = $events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'prepareDeniedViewModel'), -90);
         /* set higher priority then ExceptionStrategy */
         $this->listeners[] = $events->attach(MvcEvent::EVENT_DISPATCH_ERROR, array($this, 'detectDeniedError'), 10);
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_DISPATCH_ERROR, array($this, 'prepareDeniedViewModel'), 10);
+        $this->listeners[] = $events->attach(
+            MvcEvent::EVENT_DISPATCH_ERROR,
+            array($this, 'prepareDeniedViewModel'),
+            10
+        );
     }
 
     /**
      * Detach aggregate listeners from the specified event manager
      *
      * @param  EventManagerInterface $events
+     *
      * @return void
      */
     public function detach(EventManagerInterface $events)
@@ -91,6 +100,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      * Get template for not found conditions
      *
      * @param  string $deniedTemplate
+     *
      * @return AccessDeniedStrategy
      */
     public function setDeniedTemplate($deniedTemplate)
@@ -116,6 +126,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      * encountered, sets the response status code to 404.
      *
      * @param  MvcEvent $e
+     *
      * @return void
      */
     public function detectDeniedError(MvcEvent $e)
@@ -142,59 +153,84 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
      * Create and return a statusCode view model
      *
      * @param  MvcEvent $e
+     *
      * @return void
      */
     public function prepareDeniedViewModel(MvcEvent $e)
     {
-        $vars = $e->getResult();
-        if ($vars instanceof Response) {
-            // Already have a response as the result
-            return;
-        }
+        $serviceManager = $e->getApplication()->getServiceManager();
+        $acl = $serviceManager->get('Acl');
+        $currentUser = $acl->getCurrentUser();
+        $routeMatch = $e->getRouteMatch();
 
-        $response = $e->getResponse();
-        if ($response->getStatusCode() != $this->statusCode) {
-            // Only handle statusCode responses
-            return;
-        }
+        if (!$acl->isAllowedRouteMatch($routeMatch)) {
 
-        if (!$vars instanceof ViewModel) {
-            $model = new ViewModel();
-            if (is_string($vars)) {
-                $model->setVariable('message', $vars);
-            } else {
-                $model->setVariable('message', 'Access denied.');
+            $routeName = $routeMatch->getMatchedRouteName();
+
+            if ($routeName !== $this->routeName) {
+                $target = $e->getTarget();
+
+                // Do what ever you want to check the user's identity
+                $url = $e->getRouter()->assemble(array(), array('name' => $this->routeName));
+
+                $response = $e->getResponse();
+                $response->setHeaders($response->getHeaders()->addHeaderLine('Location', $url));
+                $response->setStatusCode(200);
+                $response->sendHeaders();
+                exit();
             }
         } else {
-            $model = $vars;
-            if ($model->getVariable('message') === null) {
-                $model->setVariable('message', 'Access denied.');
+            $vars = $e->getResult();
+            if ($vars instanceof Response) {
+                // Already have a response as the result
+                return;
             }
+
+            $response = $e->getResponse();
+            if ($response->getStatusCode() != $this->statusCode) {
+                // Only handle statusCode responses
+                return;
+            }
+
+            if (!$vars instanceof ViewModel) {
+                $model = new ViewModel();
+                if (is_string($vars)) {
+                    $model->setVariable('message', $vars);
+                } else {
+                    $model->setVariable('message', 'Access denied.');
+                }
+            } else {
+                $model = $vars;
+                if ($model->getVariable('message') === null) {
+                    $model->setVariable('message', 'Access denied.');
+                }
+            }
+
+            $model->setTemplate($this->getDeniedTemplate());
+
+            $this->injectMvcParams($model, $e);
+
+            $e->setResult($model);
         }
-
-        $model->setTemplate($this->getDeniedTemplate());
-
-        $this->injectMvcParams($model, $e);
-
-        $e->setResult($model);
     }
 
     /**
      * Inject module, controller and action into the model
      *
      * @param  ViewModel $model
-     * @param  MvcEvent $e
+     * @param  MvcEvent  $e
+     *
      * @return void
      */
     protected function injectMvcParams($model, $e)
     {
         $routeMatch = $e->getRouteMatch();
-        
+
         $module = $e->getParam('module-name');
         if (!$module) {
             $module = $routeMatch->getParam(ModuleRouteListener::MODULE_NAMESPACE);
         }
-        
+
         $controller = $e->getParam('controller-name');
         if (!$controller) {
             $controller = $routeMatch->getParam(ModuleRouteListener::ORIGINAL_CONTROLLER);
@@ -202,7 +238,7 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
                 $controller = $routeMatch->getParam('controller');
             }
         }
-        
+
         $action = $e->getParam('action-name');
         if (!$action) {
             $action = $routeMatch->getParam('action');
