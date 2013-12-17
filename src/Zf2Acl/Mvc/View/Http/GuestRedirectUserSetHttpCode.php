@@ -159,11 +159,13 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
     public function prepareDeniedViewModel(MvcEvent $e)
     {
         $serviceManager = $e->getApplication()->getServiceManager();
+        /** @var \Zf2Acl\Permissions\Acl\Acl $acl */
         $acl = $serviceManager->get('Acl');
-        $currentUser = $acl->getCurrentUser();
+        $acl->getCurrentRole();
         $routeMatch = $e->getRouteMatch();
 
-        if (!$acl->isAllowedRouteMatch($routeMatch)) {
+        if (($routeMatch instanceof \Zend\Mvc\Router\RouteMatch) && !$acl->isAllowedRouteMatch($routeMatch) ||
+            ($acl->getCurrentRole() == 'guest' && !$acl->isAllowedRouteMatch($routeMatch))) {
 
             $routeName = $routeMatch->getMatchedRouteName();
 
