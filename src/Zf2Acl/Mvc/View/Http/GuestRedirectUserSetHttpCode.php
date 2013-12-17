@@ -161,11 +161,9 @@ class GuestRedirectUserSetHttpCode implements ListenerAggregateInterface, Servic
         $serviceManager = $e->getApplication()->getServiceManager();
         /** @var \Zf2Acl\Permissions\Acl\Acl $acl */
         $acl = $serviceManager->get('Acl');
-        $acl->getCurrentRole();
         $routeMatch = $e->getRouteMatch();
 
-        if (($routeMatch instanceof \Zend\Mvc\Router\RouteMatch) && !$acl->isAllowedRouteMatch($routeMatch) ||
-            ($acl->getCurrentRole() == 'guest' && !$acl->isAllowedRouteMatch($routeMatch))) {
+        if ($routeMatch instanceof \Zend\Mvc\Router\RouteMatch && !$acl->isAllowedRouteMatch($routeMatch)) {
 
             $routeName = $routeMatch->getMatchedRouteName();
 
