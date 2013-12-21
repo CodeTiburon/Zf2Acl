@@ -33,13 +33,19 @@ class AccessDeniedStrategy implements ListenerAggregateInterface, ServiceManager
     protected $deniedTemplate = 'error';
 
     /**
+     * @var config
+     */
+    protected $config;
+
+    /**
      * Set service manager
      *
      * @param ServiceManager $serviceManager
      */
     public function setServiceManager(ServiceManager $serviceManager)
     {
-        $config = $serviceManager->get('Config');
+
+        $this->config = $config = $serviceManager->get('Config');
 
         if (isset($config['view_manager'])) {
 
