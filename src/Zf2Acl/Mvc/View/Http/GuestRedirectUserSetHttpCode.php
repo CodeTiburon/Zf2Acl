@@ -6,11 +6,13 @@
  */
 namespace Zf2Acl\Mvc\View\Http;
 
+use \Zend\Authentication\AuthenticationService;
+
 class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
 {
 
     /**
-     * Create and return a statusCode view model
+     * Create and return a statusCode view model or redirect
      *
      * @param  MvcEvent $e
      *
@@ -32,7 +34,7 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
 
             if ($redirectRoutes) {
                 $rout = '';
-                if ((new \Zend\Authentication\AuthenticationService())->hasIdentity()) {
+                if ((new AuthenticationService())->hasIdentity()) {
                     $redirectRoutes = $redirectRoutes['hasIdentity'];
                 } else {
                     $redirectRoutes = $redirectRoutes['hasntIdentity'];
