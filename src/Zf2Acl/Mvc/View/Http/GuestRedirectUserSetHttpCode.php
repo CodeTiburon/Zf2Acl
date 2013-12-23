@@ -2,11 +2,12 @@
 /**
  * Authors: Nickolay U. Kofanov, Artem Paliy
  * Company: CodeTiburon
- * Last Edited: 21.12.2013
+ * Last Edited: 23.12.2013
  */
 namespace Zf2Acl\Mvc\View\Http;
 
 use \Zend\Authentication\AuthenticationService;
+use \Zend\Mvc\MvcEvent;
 
 class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
 {
@@ -71,7 +72,7 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
         }
 
         $response = $e->getResponse();
-        if ($response->getStatusCode() != $this->statusCode) {
+        if ($response->getStatusCode() != '403') {
             // Only handle statusCode responses
             return;
         }
