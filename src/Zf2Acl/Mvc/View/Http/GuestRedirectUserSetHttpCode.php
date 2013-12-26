@@ -50,14 +50,17 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
                 if ($rout) {
                     $request = $e->getRequest();
                     $router = $e->getRouter();
+                    $response = $e->getResponse();
 
                     $url = $router->assemble(array(), array('name' => $rout));
                     if (!$request->isXmlHttpRequest()) {
-                        $response = $e->getResponse();
                         $response->setHeaders($response->getHeaders()->addHeaderLine('Location', $url));
                         $response->setStatusCode(200);
                         $response->sendHeaders();
                     } else {
+                        $response->setHeaders($response->getHeaders()->addHeaderLine('Content-Type', 'application/json'));
+                        $response->setStatusCode(200);
+                        $response->sendHeaders();
                         echo json_encode(array('status' => true, 'redirectUrl' => $url, 'needParse' => true));
                     }
                     exit();
