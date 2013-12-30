@@ -6,7 +6,10 @@
  */
 namespace Zf2Acl\Mvc\View\Http;
 
+use \Zend\Mvc\Router\RouteMatch;
 use \Zend\Authentication\AuthenticationService;
+use \Zend\Stdlib\ResponseInterface as Response;
+use \Zend\View\Model\ViewModel;
 use \Zend\Mvc\MvcEvent;
 
 class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
@@ -26,7 +29,7 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
         $acl = $serviceManager->get('Acl');
         $routeMatch = $e->getRouteMatch();
 
-        if ($routeMatch instanceof \Zend\Mvc\Router\RouteMatch &&
+        if ($routeMatch instanceof RouteMatch &&
             !$acl->isAllowedRouteMatch($routeMatch) &&
             isset($this->config['accessDeniedStrategy'])) {
             $thisRoute = $routeMatch->getMatchedRouteName();
