@@ -28,17 +28,19 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
         /** @var \Zf2Acl\Permissions\Acl\Acl $acl */
         $acl = $serviceManager->get('Acl');
         $routeMatch = $e->getRouteMatch();
+        $auth = new AuthenticationService();
 
         if ($routeMatch instanceof RouteMatch &&
             !$acl->isAllowedRouteMatch($routeMatch) &&
-            isset($this->config['accessDeniedStrategy'])) {
+            isset($this->config['accessDeniedStrategy'])
+        ) {
             $thisRoute = $routeMatch->getMatchedRouteName();
             $redirectRoutes = isset($this->config['accessDeniedStrategy']['redirects']) ?
                 $this->config['accessDeniedStrategy']['redirects'] : null;
 
             if ($redirectRoutes) {
                 $rout = '';
-                if ((new AuthenticationService())->hasIdentity()) {
+                if ($auth->hasIdentity()) {
                     $redirectRoutes = $redirectRoutes['hasIdentity'];
                 } else {
                     $redirectRoutes = $redirectRoutes['hasntIdentity'];
@@ -54,14 +56,26 @@ class GuestRedirectUserSetHttpCode extends AccessDeniedStrategy
                     $request = $e->getRequest();
                     $router = $e->getRouter();
                     $response = $e->getResponse();
+                    $uri = $e->getRequest()->getUri();
+                    $query = $uri->getQuery() ? '?' . $uri->getQuery() : '';
+                    $gotoUrl = urlencode(
+                        sprintf('%s://%s%s%s', $uri->getScheme(), $uri->getHost(), $uri->getPath(), $query)
+                    );
 
-                    $url = $router->assemble(array(), array('name' => $rout));
+                    $params = array('name' => $rout);
+                    if (!$auth->hasIdentity()) {
+                        $params['query'] = ['url' => $gotoUrl];
+                    }
+                    $url = $router->assemble(array(), $params);
+
                     if (!$request->isXmlHttpRequest()) {
                         $response->setHeaders($response->getHeaders()->addHeaderLine('Location', $url));
                         $response->setStatusCode(200);
                         $response->sendHeaders();
                     } else {
-                        $response->setHeaders($response->getHeaders()->addHeaderLine('Content-Type', 'application/json'));
+                        $response->setHeaders(
+                            $response->getHeaders()->addHeaderLine('Content-Type', 'application/json')
+                        );
                         $response->setStatusCode(200);
                         $response->sendHeaders();
                         echo json_encode(array('status' => true, 'redirectUrl' => $url, 'needParse' => true));
