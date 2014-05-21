@@ -188,9 +188,6 @@ class Acl extends ZendAcl implements ServiceManagerAwareInterface
         }
 
         $action = $routeMatch->getParam('action');
-        if (!$action) {
-            return false;
-        }
 
         $module = $module ? substr($module, 0, strpos($module, '\\')) : substr($controller, 0, strpos($controller, '\\'));
 
@@ -203,7 +200,7 @@ class Acl extends ZendAcl implements ServiceManagerAwareInterface
         $resource .= '\\';
         $resource .= $controller;
         $resource .= '\\';
-        $resource .= $action;
+        $resource .= !empty($action)?$action:'';
         $resource  = strtolower($resource);
 
         if (!$this->hasResource($resource)) {
